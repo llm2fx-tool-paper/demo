@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>LLM2Fx-Tools: Tool Calling For Music Post-Production</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="helper-v2.js" defer></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Update navigation styles to be thinner */
+    .nav-bar {
+      background-color: white;
+      padding: 0.5rem 1rem;
+      /* Reduced from 1rem */
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+      border-bottom: 1px solid #eee;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .nav-bar a {
+      color: #444;
+      /* Changed from #333 to slightly lighter */
+      text-decoration: none;
+      padding: 0.3rem 0.8rem;
+      margin: 0 0.3rem;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+    }
+
+    .nav-bar a:hover {
+      background-color: #f5f5f5;
+      color: #000;
+    }
+
+    .nav-bar a.active {
+      background-color: #f5f5f5;
+      color: #000;
+    }
+
+    /* Update content margin to match thinner navbar */
+    .content {
+      margin-top: 50px;
+      /* Reduced from 70px */
+      padding: 20px;
+    }
+
+    /* Minimal chat styling */
+    .chat-msg {
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 6px 0;
+      border: 1px solid #eee;
+      background: #fafafa;
+    }
+
+    .chat-role {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .role-user {
+      color: #0d6efd;
+    }
+
+    .role-assistant {
+      color: #198754;
+    }
+
+    .role-music {
+      color: #198754;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.9rem;
+      word-break: break-all;
+    }
+
+    .kv dt {
+      font-weight: 600;
+      color: #555;
+    }
+
+    .kv dd {
+      margin-bottom: .5rem;
+    }
+
+    /* Conversation UI borrowed from projects/talkplay/style.css */
+    .chat-container {
+      max-width: 1000px;
+      margin: 0px auto;
+      font-family: Arial, sans-serif;
+      background-color: white;
+      border-radius: 8px;
+    }
+
+    .message {
+      padding: 10px 15px;
+      border-radius: 15px;
+      max-width: 70%;
+      clear: both;
+      background-color: #f8f9fa;
+      border: 1px solid #ddd;
+    }
+
+    .user-message {
+      float: left;
+      background-color: white;
+    }
+
+    .assistant-message {
+      float: right;
+    }
+
+    .music-message {
+      float: right;
+      font-family: monospace;
+    }
+
+    .message-container {
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .chat-section {
+      margin: 40px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+
+    .message-container:nth-last-of-type(1) .music-message,
+    .message-container:nth-last-of-type(2) .assistant-message {
+      background-color: #e8f5e9;
+      border: 1px solid #c8e6c9;
+    }
+
+    /* Role-based alignment and bubble colors */
+    .chat-msg {
+      max-width: 100%;
+    }
+
+    .chat-msg.align-right {
+      margin-left: auto;
+    }
+
+    .chat-msg.is-user {
+      background: #f8f9fa;
+      border-color: #e9ecef;
+    }
+
+    .chat-msg.is-assistant {
+      background: #f8f9fa;
+      border-color: #dbdcdd;
+    }
+
+    .chat-msg.is-music {
+      background: #f8f9fa;
+      border-color: #dbdcdd;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="content">
+    <div class="container pt-5 mt-5 shadow p-5 mb-5 bg-white rounded">
+      <div class="text-center">
+        <h1 class="title is-1 publication-title">LLM2Fx-Tools: Tool Calling For Music Post-Production</h1>
+
+        <div class="is-size-5 publication-authors">
+          <span class="author-block">Anonymous Authors</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="container pt-5 mt-5 shadow p-5 mb-5 bg-white rounded">
+      <h3>Abstract</h3>
+      <div class="container" style="margin-top: 5px;">
+        <div class="content has-text-justified">
+          <p>
+            This paper introduces LLM2Fx-Tools, a multimodal tool-calling framework that generates executable sequences
+            of audio effects (Fx-chain) for music post-production. LLM2Fx-Tools uses a large language model (LLM) to
+            understand audio inputs, select audio effects types, determine their order, and estimate parameters, guided
+            by chain-of-thought (CoT) planning. We also present LP-Fx, a new instruction-following dataset with
+            structured CoT annotations and tool calls for audio effects modules. Experiments show that LLM2Fx-Tools can
+            infer an Fx-chain and its parameters from pairs of unprocessed and processed audio, enabled by
+            autoregressive sequence modeling, tool calling, and CoT reasoning. We further validate the system in a style
+            transfer setting, where audio effects information is transferred from a reference source and applied to new
+            content. Finally, LLM-as-a-judge evaluation demonstrates that our approach generates appropriate CoT
+            reasoning and responses for music production queries. To our knowledge, this is the first work to apply
+            LLM-based tool calling to audio effects modules, enabling interpretable and controllable music production
+            where users can incorporate their own audio plugins.
+          </p>
+          <div class="row justify-content-center">
+            <div class="col-12">
+              <img src="./static/fig/main.png" class="img-fluid" alt="LLM2Fx-Tools system overview"
+                style="width: 100%; display: block; margin: 0 auto;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conversational Demo -->
+    <div class="container pt-5 mt-5 shadow p-5 mb-5 bg-white rounded">
+      <h3 class="mb-3">Reverse Engineering</h3>
+      <div class="row g-3 align-items-end">
+        <div class="col-md-12">
+          <label for="entrySelect" class="form-label">Select example</label>
+          <select id="entrySelect" class="form-select">
+            <option value="">Select an example...</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="loadError" class="alert alert-danger d-none mt-4" role="alert"></div>
+
+      <!-- Conversation Display -->
+      <div id="convChat" class="chat-container mt-4"></div>
+    </div>
+
+    <!-- Style Transfer Demo -->
+    <div class="container pt-5 mt-5 shadow p-5 mb-5 bg-white rounded">
+      <h3 class="mb-3">Style Transfer</h3>
+      <div class="row g-3 align-items-end">
+        <div class="col-md-12">
+          <label for="styleTransferSelect" class="form-label">Select example</label>
+          <select id="styleTransferSelect" class="form-select">
+            <option value="">Select an example...</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="styleTransferError" class="alert alert-danger d-none mt-4" role="alert"></div>
+
+      <!-- Conversation Display -->
+      <div id="styleTransferChat" class="chat-container mt-4"></div>
+    </div>
+
+    <script>
+      (function () {
+        const JSON_BASE = './static/reverse_eng/';
+        const AUDIO_BASE = './static/audio/';
+        const FILES = [
+          '764aac2b-dd87-4097-9db4-6f8fc2a8a929.json',
+          'e611045b-177f-4105-9f86-455f47b6745d.json',
+          '5907bf9c-6341-44e7-b0f2-f93e5472c1eb.json',
+          '7d0d9088-d22d-425e-993b-96e90fa893b1.json',
+          '119b6e57-8fe1-4f3b-a439-d33784f77ad7.json',
+          '2c8f6ba0-2470-4a38-be31-4bced9b3121f.json',
+          '9d03c865-86e9-4c0f-9e4c-90400c1f37c5.json',
+          'd3d7fa2d-f425-48a1-b6c2-83734671045f.json',
+          'e07e239c-c9c3-431f-8f67-22f9bcceaef2.json',
+          'f84c78f2-018d-41d0-bb88-c59b2fc3d912.json',
+          'f9c42fa9-6ff2-4661-9044-d258daf6c6c8.json',
+        ];
+
+        const els = {
+          chat: document.getElementById('convChat'),
+          select: document.getElementById('entrySelect'),
+          error: document.getElementById('loadError')
+        };
+
+        /** @type {Record<string, any>} */
+        const entriesById = {};
+        /** @type {any[]} */
+        let entriesList = [];
+
+        function createAudio(src) {
+          const audio = document.createElement('audio');
+          audio.controls = true;
+          audio.src = src;
+          audio.controlsList = 'nodownload noplaybackrate';
+          audio.addEventListener('keydown', e => e.preventDefault());
+          return audio;
+        }
+
+        function clearChat() {
+          els.chat.innerHTML = '';
+        }
+
+        function renderUserMessage(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'chat-msg is-user';
+
+          const role = document.createElement('div');
+          role.className = 'chat-role role-user';
+          role.textContent = 'User';
+
+          const content = document.createElement('div');
+
+          // Query text
+          const queryDiv = document.createElement('div');
+          queryDiv.className = 'mb-3';
+          queryDiv.textContent = entry.user_query || 'No query provided.';
+          content.appendChild(queryDiv);
+
+          // Audio files
+          const audios = document.createElement('div');
+          audios.className = 'row g-3 mt-2';
+
+          const col1 = document.createElement('div');
+          col1.className = 'col-md-6';
+          const label1 = document.createElement('div');
+          label1.className = 'text-muted small fw-bold mb-1';
+          label1.textContent = 'Input Audio';
+          const inputAudio = createAudio(`${AUDIO_BASE}${entry.id}/input.flac`);
+          col1.appendChild(label1);
+          col1.appendChild(inputAudio);
+
+          const col2 = document.createElement('div');
+          col2.className = 'col-md-6';
+          const label2 = document.createElement('div');
+          label2.className = 'text-muted small fw-bold mb-1';
+          label2.textContent = 'Reference Audio';
+          const refAudio = createAudio(`${AUDIO_BASE}${entry.id}/reference.flac`);
+          col2.appendChild(label2);
+          col2.appendChild(refAudio);
+
+          audios.appendChild(col1);
+          audios.appendChild(col2);
+          content.appendChild(audios);
+
+          wrap.appendChild(role);
+          wrap.appendChild(content);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderThinkingMessage(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'chat-msg align-right is-assistant';
+
+          const role = document.createElement('div');
+          role.className = 'chat-role role-assistant';
+          role.textContent = 'Assistant (Thinking)';
+
+          const content = document.createElement('div');
+
+          const thinkingText = document.createElement('div');
+          thinkingText.style.whiteSpace = 'pre-wrap';
+          thinkingText.textContent = entry.thinking_content || 'No thinking content available.';
+          content.appendChild(thinkingText);
+
+          wrap.appendChild(role);
+          wrap.appendChild(content);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderToolResponseMessage(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'chat-msg align-right is-assistant';
+
+          const role = document.createElement('div');
+          role.className = 'chat-role role-assistant';
+          role.textContent = 'Assistant (Tool Response)';
+
+          const content = document.createElement('div');
+
+          // Tool response as JSON
+          if (entry.tool_response && entry.tool_response.length > 0) {
+            const toolJson = document.createElement('pre');
+            toolJson.style.backgroundColor = '#f8f9fa';
+            toolJson.style.border = '1px solid #dee2e6';
+            toolJson.style.borderRadius = '4px';
+            toolJson.style.padding = '15px';
+            toolJson.style.fontSize = '0.85rem';
+            toolJson.style.lineHeight = '1.5';
+            toolJson.style.margin = '0';
+            toolJson.style.overflow = 'auto';
+            toolJson.textContent = JSON.stringify(entry.tool_response, null, 2);
+            content.appendChild(toolJson);
+          } else {
+            const noTools = document.createElement('div');
+            noTools.textContent = 'No tool results available.';
+            content.appendChild(noTools);
+          }
+
+          wrap.appendChild(role);
+          wrap.appendChild(content);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderAnswerMessage(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'chat-msg align-right is-assistant';
+
+          const role = document.createElement('div');
+          role.className = 'chat-role role-assistant';
+          role.textContent = 'Assistant (Answer)';
+
+          const content = document.createElement('div');
+
+          // Answer text with tool_call blocks removed
+          const answerText = document.createElement('div');
+          answerText.style.whiteSpace = 'pre-wrap';
+          answerText.className = 'mb-3';
+          let cleanedAnswer = entry.answer_content || 'No answer content available.';
+          cleanedAnswer = cleanedAnswer.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim();
+          answerText.textContent = cleanedAnswer;
+          content.appendChild(answerText);
+
+          // Output audio
+          const outputSection = document.createElement('div');
+          outputSection.className = 'mt-3';
+          const outputLabel = document.createElement('div');
+          outputLabel.className = 'text-muted small fw-bold mb-1';
+          outputLabel.textContent = 'Output Audio';
+          const outputAudio = createAudio(`${AUDIO_BASE}${entry.id}/output.flac`);
+          outputSection.appendChild(outputLabel);
+          outputSection.appendChild(outputAudio);
+          content.appendChild(outputSection);
+
+          wrap.appendChild(role);
+          wrap.appendChild(content);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderComparisonModels(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'mt-4';
+
+          // Horizontal rule
+          const hr = document.createElement('hr');
+          hr.style.margin = '30px 0';
+          wrap.appendChild(hr);
+
+          // Title
+          const title = document.createElement('h5');
+          title.className = 'mb-3';
+          title.textContent = 'Comparison Models';
+          wrap.appendChild(title);
+
+          // Audio grid
+          const audioGrid = document.createElement('div');
+          audioGrid.className = 'row g-3';
+
+          const models = [
+            { name: 'Regression (tool selection X)', file: 'regression.flac' },
+            { name: 'Multitask (tool ordering X)', file: 'multitask.flac' },
+            { name: 'Gemini 2.5 Flash (zeroshot MLLM)', file: 'gemini2_5_flash.flac' }
+          ];
+
+          models.forEach(model => {
+            const col = document.createElement('div');
+            col.className = 'col-md-4';
+
+            const label = document.createElement('div');
+            label.className = 'text-muted small fw-bold mb-1';
+            label.textContent = model.name;
+
+            const audio = createAudio(`${AUDIO_BASE}${entry.id}/${model.file}`);
+
+            col.appendChild(label);
+            col.appendChild(audio);
+            audioGrid.appendChild(col);
+          });
+
+          wrap.appendChild(audioGrid);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderConversation(entry) {
+          clearChat();
+          if (!entry) return;
+
+          renderUserMessage(entry);
+          renderThinkingMessage(entry);
+          renderToolResponseMessage(entry);
+          renderAnswerMessage(entry);
+          renderComparisonModels(entry);
+        }
+
+        async function loadAll() {
+          try {
+            const results = await Promise.all(FILES.map(name =>
+              fetch(JSON_BASE + name).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+              })
+            ));
+
+            entriesList = results;
+            results.forEach(d => {
+              entriesById[d.id] = d;
+
+              // Populate dropdown
+              const option = document.createElement('option');
+              option.value = d.id;
+              option.textContent = `${d.id.replace('.json', '')} - ${d.instrument || 'unknown'}`;
+              els.select.appendChild(option);
+            });
+
+            // Render first example by default
+            if (entriesList.length > 0) {
+              const firstEntry = entriesList[0];
+              els.select.value = firstEntry.id;
+              renderConversation(firstEntry);
+            }
+
+          } catch (err) {
+            els.error.classList.remove('d-none');
+            els.error.textContent = `Failed to load examples: ${err.message}`;
+            console.error(err);
+          }
+        }
+
+        // Event listener for dropdown
+        els.select.addEventListener('change', (e) => {
+          const selectedId = e.target.value;
+          if (selectedId && entriesById[selectedId]) {
+            renderConversation(entriesById[selectedId]);
+          } else {
+            clearChat();
+          }
+        });
+
+        loadAll();
+      })();
+    </script>
+
+    <!-- Style Transfer Script -->
+    <script>
+      (function () {
+        const JSON_BASE = './static/style_transfer/';
+        const AUDIO_BASE = './static/audio/';
+        const FILES = [
+          '120c94a9-cc04-4257-b93e-2d54b599cd08.json',
+          '14966bf3-983c-4e4c-8ced-57cfb69d7e60.json',
+          '1d9b30d3-33ef-4494-9071-99a2ff3dc6d5.json',
+          'b6e45534-f354-439e-ac4e-5b3955000160.json',
+        ];
+
+        const els = {
+          chat: document.getElementById('styleTransferChat'),
+          select: document.getElementById('styleTransferSelect'),
+          error: document.getElementById('styleTransferError')
+        };
+
+        /** @type {Record<string, any>} */
+        const entriesById = {};
+        /** @type {any[]} */
+        let entriesList = [];
+
+        function createAudio(src) {
+          const audio = document.createElement('audio');
+          audio.controls = true;
+          audio.src = src;
+          audio.controlsList = 'nodownload noplaybackrate';
+          audio.addEventListener('keydown', e => e.preventDefault());
+          return audio;
+        }
+
+        function clearChat() {
+          els.chat.innerHTML = '';
+        }
+
+        function renderUserMessage(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'chat-msg is-user';
+
+          const role = document.createElement('div');
+          role.className = 'chat-role role-user';
+          role.textContent = 'User';
+
+          const content = document.createElement('div');
+
+          // Query text
+          const queryDiv = document.createElement('div');
+          queryDiv.className = 'mb-3';
+          queryDiv.textContent = `Transfer the audio processing style from the reference audio to my input audio. My input is a ${entry.instrument || 'audio'} track.`;
+          content.appendChild(queryDiv);
+
+          // Audio files
+          const audios = document.createElement('div');
+          audios.className = 'row g-3 mt-2';
+
+          const col1 = document.createElement('div');
+          col1.className = 'col-md-6';
+          const label1 = document.createElement('div');
+          label1.className = 'text-muted small fw-bold mb-1';
+          label1.textContent = 'Input Audio';
+          const inputAudio = createAudio(`${AUDIO_BASE}${entry.id}/input.flac`);
+          col1.appendChild(label1);
+          col1.appendChild(inputAudio);
+
+          const col2 = document.createElement('div');
+          col2.className = 'col-md-6';
+          const label2 = document.createElement('div');
+          label2.className = 'text-muted small fw-bold mb-1';
+          label2.textContent = 'Reference Audio';
+          const refAudio = createAudio(`${AUDIO_BASE}${entry.id}/reference.flac`);
+          col2.appendChild(label2);
+          col2.appendChild(refAudio);
+
+          audios.appendChild(col1);
+          audios.appendChild(col2);
+          content.appendChild(audios);
+
+          wrap.appendChild(role);
+          wrap.appendChild(content);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderThinkingMessage(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'chat-msg align-right is-assistant';
+
+          const role = document.createElement('div');
+          role.className = 'chat-role role-assistant';
+          role.textContent = 'Assistant (Thinking)';
+
+          const content = document.createElement('div');
+
+          const thinkingText = document.createElement('div');
+          thinkingText.style.whiteSpace = 'pre-wrap';
+          thinkingText.textContent = entry.thinking_content || 'No thinking content available.';
+          content.appendChild(thinkingText);
+
+          wrap.appendChild(role);
+          wrap.appendChild(content);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderToolResponseMessage(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'chat-msg align-right is-assistant';
+
+          const role = document.createElement('div');
+          role.className = 'chat-role role-assistant';
+          role.textContent = 'Assistant (Tool Response)';
+
+          const content = document.createElement('div');
+
+          // Tool response as JSON
+          if (entry.tool_response && entry.tool_response.length > 0) {
+            const toolJson = document.createElement('pre');
+            toolJson.style.backgroundColor = '#f8f9fa';
+            toolJson.style.border = '1px solid #dee2e6';
+            toolJson.style.borderRadius = '4px';
+            toolJson.style.padding = '15px';
+            toolJson.style.fontSize = '0.85rem';
+            toolJson.style.lineHeight = '1.5';
+            toolJson.style.margin = '0';
+            toolJson.style.overflow = 'auto';
+            toolJson.textContent = JSON.stringify(entry.tool_response, null, 2);
+            content.appendChild(toolJson);
+          } else {
+            const noTools = document.createElement('div');
+            noTools.textContent = 'No tool results available.';
+            content.appendChild(noTools);
+          }
+
+          wrap.appendChild(role);
+          wrap.appendChild(content);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderAnswerMessage(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'chat-msg align-right is-assistant';
+
+          const role = document.createElement('div');
+          role.className = 'chat-role role-assistant';
+          role.textContent = 'Assistant (Answer)';
+
+          const content = document.createElement('div');
+
+          // Answer text with tool_call blocks removed
+          const answerText = document.createElement('div');
+          answerText.style.whiteSpace = 'pre-wrap';
+          answerText.className = 'mb-3';
+          let cleanedAnswer = entry.answer_content || 'No answer content available.';
+          cleanedAnswer = cleanedAnswer.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim();
+          answerText.textContent = cleanedAnswer;
+          content.appendChild(answerText);
+
+          // Output audio
+          const outputSection = document.createElement('div');
+          outputSection.className = 'mt-3';
+          const outputLabel = document.createElement('div');
+          outputLabel.className = 'text-muted small fw-bold mb-1';
+          outputLabel.textContent = 'Output Audio';
+          const outputAudio = createAudio(`${AUDIO_BASE}${entry.id}/output.flac`);
+          outputSection.appendChild(outputLabel);
+          outputSection.appendChild(outputAudio);
+          content.appendChild(outputSection);
+
+          wrap.appendChild(role);
+          wrap.appendChild(content);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderComparisonModels(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'mt-4';
+
+          // Horizontal rule
+          const hr = document.createElement('hr');
+          hr.style.margin = '30px 0';
+          wrap.appendChild(hr);
+
+          // Title
+          const title = document.createElement('h5');
+          title.className = 'mb-3';
+          title.textContent = 'Comparison Models';
+          wrap.appendChild(title);
+
+          // Audio grid
+          const audioGrid = document.createElement('div');
+          audioGrid.className = 'row g-3';
+
+          const models = [
+            { name: 'Regression (tool selection X)', file: 'regression.flac' },
+            { name: 'Multitask (tool ordering X)', file: 'multitask.flac' },
+            { name: 'Gemini 2.5 Flash (zeroshot MLLM)', file: 'gemini2_5_flash.flac' }
+          ];
+
+          models.forEach(model => {
+            const col = document.createElement('div');
+            col.className = 'col-md-4';
+
+            const label = document.createElement('div');
+            label.className = 'text-muted small fw-bold mb-1';
+            label.textContent = model.name;
+
+            const audio = createAudio(`${AUDIO_BASE}${entry.id}/${model.file}`);
+
+            col.appendChild(label);
+            col.appendChild(audio);
+            audioGrid.appendChild(col);
+          });
+
+          wrap.appendChild(audioGrid);
+          els.chat.appendChild(wrap);
+        }
+
+        function renderConversation(entry) {
+          clearChat();
+          if (!entry) return;
+
+          renderUserMessage(entry);
+          renderThinkingMessage(entry);
+          renderToolResponseMessage(entry);
+          renderAnswerMessage(entry);
+          renderComparisonModels(entry);
+        }
+
+        async function loadAll() {
+          try {
+            const results = await Promise.all(FILES.map(name =>
+              fetch(JSON_BASE + name).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+              })
+            ));
+
+            entriesList = results;
+            results.forEach(d => {
+              entriesById[d.id] = d;
+
+              // Populate dropdown
+              const option = document.createElement('option');
+              option.value = d.id;
+              option.textContent = `${d.id.replace('.json', '')} - ${d.instrument || 'unknown'}`;
+              els.select.appendChild(option);
+            });
+
+            // Render first example by default
+            if (entriesList.length > 0) {
+              const firstEntry = entriesList[0];
+              els.select.value = firstEntry.id;
+              renderConversation(firstEntry);
+            }
+
+          } catch (err) {
+            els.error.classList.remove('d-none');
+            els.error.textContent = `Failed to load examples: ${err.message}`;
+            console.error(err);
+          }
+        }
+
+        // Event listener for dropdown
+        els.select.addEventListener('change', (e) => {
+          const selectedId = e.target.value;
+          if (selectedId && entriesById[selectedId]) {
+            renderConversation(entriesById[selectedId]);
+          } else {
+            clearChat();
+          }
+        });
+
+        loadAll();
+      })();
+    </script>
+
+    <!-- LLM as a Judge Comparison -->
+    <div class="container pt-5 mt-5 shadow p-5 mb-5 bg-white rounded">
+      <h3 class="mb-3">Natural Language Generations (CoT & Response)</h3>
+      <div class="row g-3 align-items-end">
+        <div class="col-md-12">
+          <label for="judgeSelect" class="form-label">Select example</label>
+          <select id="judgeSelect" class="form-select">
+            <option value="">Select an example...</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="judgeError" class="alert alert-danger d-none mt-4" role="alert"></div>
+
+      <!-- User Query Display -->
+      <div id="judgeUserQuery" class="mt-4"></div>
+
+      <!-- Comparison Display -->
+      <div id="judgeComparison" class="mt-4"></div>
+    </div>
+
+    <script>
+      (function () {
+        const JSON_BASE = './static/llm_as_a_judge/';
+        const FILES = [
+          '68ac3e68-6e9b-47fa-8bff-c97ab34dce30.json',
+          "92c095f2-3965-4dc3-a857-9f12b2502dbb.json",
+          'fc394a69-95a7-47ed-b8ce-42974ffa5c45.json',
+          'b06f2857-253a-469c-80e3-19ff46b36698.json',
+        ];
+
+        const els = {
+          select: document.getElementById('judgeSelect'),
+          error: document.getElementById('judgeError'),
+          userQuery: document.getElementById('judgeUserQuery'),
+          comparison: document.getElementById('judgeComparison')
+        };
+
+        /** @type {Record<string, any>} */
+        const entriesById = {};
+        /** @type {any[]} */
+        let entriesList = [];
+
+        function clearDisplay() {
+          els.userQuery.innerHTML = '';
+          els.comparison.innerHTML = '';
+        }
+
+        function renderUserQuery(entry) {
+          const wrap = document.createElement('div');
+          wrap.className = 'chat-msg is-user';
+
+          const role = document.createElement('div');
+          role.className = 'chat-role role-user';
+          role.textContent = 'User Query';
+
+          const content = document.createElement('div');
+          content.textContent = entry.user_query || 'No query provided.';
+
+          wrap.appendChild(role);
+          wrap.appendChild(content);
+          els.userQuery.appendChild(wrap);
+        }
+
+        function renderModelOutput(title, cotContent, toolResults, responseContent, colorClass) {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const cardHeader = document.createElement('div');
+          cardHeader.className = `card-header ${colorClass}`;
+          cardHeader.innerHTML = `<strong>${title}</strong>`;
+
+          const cardBody = document.createElement('div');
+          cardBody.className = 'card-body';
+
+          // 1. Chain of Thought
+          const cotSection = document.createElement('div');
+          cotSection.className = 'mb-4 p-3';
+          cotSection.style.backgroundColor = '#f8f9fa';
+          cotSection.style.borderRadius = '6px';
+
+          const cotTitle = document.createElement('h6');
+          cotTitle.className = 'text-muted mb-2 fw-bold';
+          cotTitle.textContent = '1. Chain of Thought';
+
+          const cotText = document.createElement('div');
+          cotText.style.whiteSpace = 'pre-wrap';
+          cotText.style.fontSize = '0.9rem';
+          cotText.style.lineHeight = '1.6';
+
+          // Replace <red> tags with red text - simple and direct
+          let formattedCot = cotContent || 'No CoT content available.';
+          if (formattedCot.includes('<red>')) {
+            formattedCot = formattedCot.replace(/<red>/g, '<span style="color: #dc3545; font-weight: 600;">');
+            formattedCot = formattedCot.replace(/<\/red>/g, '</span>');
+            cotText.innerHTML = formattedCot;
+          } else {
+            cotText.textContent = formattedCot;
+          }
+
+          cotSection.appendChild(cotTitle);
+          cotSection.appendChild(cotText);
+
+          // 2. Tool Response
+          const toolSection = document.createElement('div');
+          toolSection.className = 'mb-4 p-3';
+          toolSection.style.backgroundColor = '#e7f3ff';
+          toolSection.style.borderRadius = '6px';
+
+          const toolTitle = document.createElement('h6');
+          toolTitle.className = 'text-muted mb-3 fw-bold';
+          toolTitle.textContent = '2. Tool Response';
+
+          toolSection.appendChild(toolTitle);
+
+          if (toolResults && toolResults.length > 0) {
+            const toolJson = document.createElement('pre');
+            toolJson.style.backgroundColor = 'white';
+            toolJson.style.border = '1px solid #dee2e6';
+            toolJson.style.borderRadius = '4px';
+            toolJson.style.padding = '15px';
+            toolJson.style.fontSize = '0.85rem';
+            toolJson.style.lineHeight = '1.5';
+            toolJson.style.margin = '0';
+            toolJson.style.overflow = 'auto';
+            toolJson.textContent = JSON.stringify(toolResults, null, 2);
+            toolSection.appendChild(toolJson);
+          } else {
+            const noTools = document.createElement('div');
+            noTools.textContent = 'No tool results available.';
+            noTools.style.fontSize = '0.9rem';
+            toolSection.appendChild(noTools);
+          }
+
+          // 3. Answer
+          const answerSection = document.createElement('div');
+          answerSection.className = 'p-3';
+          answerSection.style.backgroundColor = '#f8f9fa';
+          answerSection.style.borderRadius = '6px';
+
+          const answerTitle = document.createElement('h6');
+          answerTitle.className = 'text-muted mb-2 fw-bold';
+          answerTitle.textContent = '3. Answer';
+
+          const answerText = document.createElement('div');
+          answerText.style.whiteSpace = 'pre-wrap';
+          answerText.style.fontSize = '0.9rem';
+          answerText.style.lineHeight = '1.6';
+
+          // Remove <tool_call>...</tool_call> blocks from response
+          let cleanedResponse = responseContent || 'No answer available.';
+          cleanedResponse = cleanedResponse.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim();
+
+          // Replace <red> tags with red text - simple and direct
+          if (cleanedResponse.includes('<red>')) {
+            cleanedResponse = cleanedResponse.replace(/<red>/g, '<span style="color: #dc3545; font-weight: 600;">');
+            cleanedResponse = cleanedResponse.replace(/<\/red>/g, '</span>');
+            answerText.innerHTML = cleanedResponse;
+          } else {
+            answerText.textContent = cleanedResponse;
+          }
+
+          answerSection.appendChild(answerTitle);
+          answerSection.appendChild(answerText);
+
+          cardBody.appendChild(cotSection);
+          cardBody.appendChild(toolSection);
+          cardBody.appendChild(answerSection);
+          card.appendChild(cardHeader);
+          card.appendChild(cardBody);
+
+          return card;
+        }
+
+        function renderComparison(entry) {
+          clearDisplay();
+          if (!entry) return;
+
+          renderUserQuery(entry);
+
+          // Create two-column comparison
+          const row = document.createElement('div');
+          row.className = 'row g-4';
+
+          // Gemini column (left)
+          const col1 = document.createElement('div');
+          col1.className = 'col-md-6';
+          const geminiCard = renderModelOutput(
+            'Gemini 2.5 Flash',
+            entry.gemini_2_5_flash_cot,
+            entry.gemini_2_5_flash_tool_results,
+            entry.gemini_2_5_flash_response,
+            'bg-secondary text-white'
+          );
+          col1.appendChild(geminiCard);
+
+          // LLM2Fx2 column (right)
+          const col2 = document.createElement('div');
+          col2.className = 'col-md-6';
+          const llm2fx2Card = renderModelOutput(
+            'LLM2Fx-Tools',
+            entry.llm2fx2_cot,
+            entry.llm2fx2_tool_results,
+            entry.llm2fx2_response,
+            'bg-primary text-white'
+          );
+          col2.appendChild(llm2fx2Card);
+
+          row.appendChild(col1);
+          row.appendChild(col2);
+          els.comparison.appendChild(row);
+        }
+
+        async function loadAll() {
+          try {
+            const results = await Promise.all(FILES.map(name =>
+              fetch(JSON_BASE + name).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+              })
+            ));
+
+            entriesList = results;
+            results.forEach((d, idx) => {
+              entriesById[d.id] = d;
+
+              // Populate dropdown
+              const option = document.createElement('option');
+              option.value = d.id;
+              option.textContent = d.id;
+              els.select.appendChild(option);
+            });
+
+            // Render first example by default
+            if (entriesList.length > 0) {
+              const firstEntry = entriesList[0];
+              els.select.value = firstEntry.id;
+              renderComparison(firstEntry);
+            }
+
+          } catch (err) {
+            els.error.classList.remove('d-none');
+            els.error.textContent = `Failed to load examples: ${err.message}`;
+            console.error(err);
+          }
+        }
+
+        // Event listener for dropdown
+        els.select.addEventListener('change', (e) => {
+          const selectedId = e.target.value;
+          if (selectedId && entriesById[selectedId]) {
+            renderComparison(entriesById[selectedId]);
+          } else {
+            clearDisplay();
+          }
+        });
+
+        loadAll();
+      })();
+    </script>
+  </div>
+</body>
+
+</html>
