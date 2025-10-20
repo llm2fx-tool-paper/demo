@@ -252,16 +252,14 @@
         const AUDIO_BASE = './static/audio/';
         const FILES = [
           '764aac2b-dd87-4097-9db4-6f8fc2a8a929.json',
-          'e611045b-177f-4105-9f86-455f47b6745d.json',
-          '5907bf9c-6341-44e7-b0f2-f93e5472c1eb.json',
+          '2c8f6ba0-2470-4a38-be31-4bced9b3121f.json',
           '7d0d9088-d22d-425e-993b-96e90fa893b1.json',
           '119b6e57-8fe1-4f3b-a439-d33784f77ad7.json',
-          '2c8f6ba0-2470-4a38-be31-4bced9b3121f.json',
-          '9d03c865-86e9-4c0f-9e4c-90400c1f37c5.json',
           'd3d7fa2d-f425-48a1-b6c2-83734671045f.json',
-          'e07e239c-c9c3-431f-8f67-22f9bcceaef2.json',
           'f84c78f2-018d-41d0-bb88-c59b2fc3d912.json',
           'f9c42fa9-6ff2-4661-9044-d258daf6c6c8.json',
+          'e611045b-177f-4105-9f86-455f47b6745d.json',
+          '5907bf9c-6341-44e7-b0f2-f93e5472c1eb.json',
         ];
 
         const els = {
@@ -895,7 +893,7 @@
           // Replace <red> tags with red text - simple and direct
           let formattedCot = cotContent || 'No CoT content available.';
           if (formattedCot.includes('<red>')) {
-            formattedCot = formattedCot.replace(/<red>/g, '<span style="color: #dc3545; font-weight: 600;">');
+            formattedCot = formattedCot.replace(/<red>/g, '<span style="color: #6c757d; font-weight: 600;">');
             formattedCot = formattedCot.replace(/<\/red>/g, '</span>');
             cotText.innerHTML = formattedCot;
           } else {
