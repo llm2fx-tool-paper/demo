@@ -893,7 +893,7 @@
           // Replace <red> tags with red text - simple and direct
           let formattedCot = cotContent || 'No CoT content available.';
           if (formattedCot.includes('<red>')) {
-            formattedCot = formattedCot.replace(/<red>/g, '<span style="color: #6c757d; font-weight: 600;">');
+            formattedCot = formattedCot.replace(/<red>/g, '<span style="color:rgb(255, 0, 0); font-weight: 400;">');
             formattedCot = formattedCot.replace(/<\/red>/g, '</span>');
             cotText.innerHTML = formattedCot;
           } else {
